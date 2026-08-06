@@ -1,20 +1,14 @@
 from pydantic import BaseModel
 
+class HouseInput(BaseModel):
 
-class HouseData(BaseModel):
-
-    sqft: float
-
-    yrbuilt: int
-
-    beds: int
-
-    baths: float
-
-    floors: float
-
-    view: int
-
-    cond: int
-
-    waterfront: int
+    Area: str
+    BHK: int
+    Bathroom: int
+    Balcony: int
+    SuperBuiltup_sqft: float
+    Carpet_sqft: float
+    Floor: int
+    TotalFloors: int
+    Parking: int
+    AgeYears: int

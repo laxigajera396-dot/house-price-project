@@ -1,38 +1,30 @@
-from sqlalchemy import Column
-
-from sqlalchemy import Integer
-
-from sqlalchemy import Float
-
-
+from sqlalchemy import Column, Integer, Float, String
 from database import Base
-
 
 class Prediction(Base):
 
-    __tablename__ = "predictions"
+    __tablename__ = "prediction"
 
+    id = Column(Integer, primary_key=True, index=True)
 
-    id = Column(
-        Integer,
-        primary_key=True,
-        index=True
-    )
+    Area = Column(String)
 
-    sqft = Column(Float)
+    SuperBuiltup_sqft = Column(Float)
 
-    yrbuilt = Column(Integer)
+    Carpet_sqft = Column(Float)
 
-    beds = Column(Integer)
+    BHK = Column(Integer)
 
-    baths = Column(Float)
+    Bathroom = Column(Integer)
 
-    floors = Column(Float)
+    Balcony = Column(Integer)
 
-    view = Column(Integer)
+    Floor = Column(Integer)
 
-    cond = Column(Integer)
+    TotalFloors = Column(Integer)
 
-    waterfront = Column(Integer)
+    Parking = Column(Integer)
 
-    predicted_price = Column(Float)
+    AgeYears = Column(Integer)
+
+    PredictedPrice = Column(Float)

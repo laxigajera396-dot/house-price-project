@@ -1,25 +1,24 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.staticfiles import StaticFiles
-from fastapi.responses import FileResponse
+from fastapi.responses import HTMLResponse
+from fastapi.templating import Jinja2Templates
 
-from schema import HouseData
-
+from pathlib import Path
+import pandas as pd
 import joblib
-import numpy as np
 
-from database import SessionLocal
-from database import engine
-from database import Base
-
+from database import Base, engine, SessionLocal
 from models import Prediction
+from schema import HouseInput
 
-app = FastAPI()
+app = FastAPI(title="Surat House Price Prediction")
 
-# CREATE TABLE
+# ---------------- Database ----------------
+
 Base.metadata.create_all(bind=engine)
 
-# CORS
+# ---------------- CORS ----------------
+
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -28,67 +27,88 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# LOAD MODEL
-model = joblib.load("../model/model.pkl")
-scaler = joblib.load("../model/scaler.pkl")
+# ---------------- Template ----------------
 
-# FRONTEND
-app.mount("/static", StaticFiles(directory="../frontend"), name="static")
+BASE_DIR = Path(__file__).resolve().parent.parent
 
-@app.get("/")
-def home():
-    return FileResponse("../frontend/index.html")
+templates = Jinja2Templates(
+    directory=str(BASE_DIR / "frontend")
+)
 
+# ---------------- Model ----------------
 
-# PREDICTION API
+model = joblib.load(str(BASE_DIR / "model" / "model.pkl"))
+
+encoder = joblib.load(str(BASE_DIR / "model" / "area_encoder.pkl"))
+
+# ---------------- Home ----------------
+
+@app.get("/", response_class=HTMLResponse)
+async def home(request: Request):
+
+    return templates.TemplateResponse(
+        "index.html",
+        {"request": request}
+    )
+
+# ---------------- Prediction ----------------
+
 @app.post("/predict")
-def predict(data: HouseData):
+def predict(data: HouseInput):
 
     db = SessionLocal()
 
-    try:
+    area = encoder.transform([data.Area])[0]
 
-        features = np.array([[
-            data.sqft,
-            data.yrbuilt,
-            data.beds,
-            data.baths,
-            data.floors,
-            data.view,
-            data.cond,
-            data.waterfront
-        ]])
+    input_df = pd.DataFrame([{
 
-        scaled_data = scaler.transform(features)
+        "Area": area,
+        "BHK": data.BHK,
+        "Bathroom": data.Bathroom,
+        "Balcony": data.Balcony,
+        "SuperBuiltup_sqft": data.SuperBuiltup_sqft,
+        "Carpet_sqft": data.Carpet_sqft,
+        "Floor": data.Floor,
+        "TotalFloors": data.TotalFloors,
+        "Parking": data.Parking,
+        "AgeYears": data.AgeYears
 
-        prediction = model.predict(scaled_data)
+    }])
 
-        predicted_price = float(prediction[0])
+    prediction = model.predict(input_df)[0]
 
-        # SAVE DATABASE
-        new_prediction = Prediction(
-            sqft=data.sqft,
-            yrbuilt=data.yrbuilt,
-            beds=data.beds,
-            baths=data.baths,
-            floors=data.floors,
-            view=data.view,
-            cond=data.cond,
-            waterfront=data.waterfront,
-            predicted_price=predicted_price
-        )
+    save_prediction = Prediction(
 
-        db.add(new_prediction)
-        db.commit()
+    Area=data.Area,
 
-        return {
-            "predicted_price": round(predicted_price, 2)
-        }
+    SuperBuiltup_sqft=data.SuperBuiltup_sqft,
 
-    except Exception as e:
-        return {
-            "error": str(e)
-        }
+    Carpet_sqft=data.Carpet_sqft,
 
-    finally:
-        db.close()
+    BHK=data.BHK,
+
+    Bathroom=data.Bathroom,
+
+    Balcony=data.Balcony,
+
+    Floor=data.Floor,
+
+    TotalFloors=data.TotalFloors,
+
+    Parking=data.Parking,
+
+    AgeYears=data.AgeYears,
+
+    PredictedPrice=float(prediction)
+
+)
+
+    db.add(save_prediction)
+    db.commit()
+    db.close()
+
+    return {
+        "Predicted Price": float(prediction)
+    }
+
+print("✅ MODEL IS RUNNING")
