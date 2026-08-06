@@ -1,8 +1,10 @@
 fastapi
 uvicorn
-scikit-learn
+jinja2
+sqlalchemy
+psycopg2-binary
 pandas
 numpy
+scikit-learn
 joblib
 python-multipart
-pydantic
