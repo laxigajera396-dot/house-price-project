@@ -7,9 +7,9 @@ from pathlib import Path
 import pandas as pd
 import joblib
 
-from database import Base, engine, SessionLocal
-from models import Prediction
-from schema import HouseInput
+from backend.database import Base, engine, SessionLocal
+from backend.models import Prediction
+from backend.schema import HouseInput
 
 app = FastAPI(title="Surat House Price Prediction")
 
